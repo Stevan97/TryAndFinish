@@ -9,12 +9,16 @@ public class Filmovi {
     public static final String TABLE_NAME = "movies";
     public static final String FIELD_ID = "id";
     public static final String FIELD_movieNAME = "movieName";
+    public static final String FIELD_OCENA = "ocena";
 
     @DatabaseField(columnName = FIELD_ID, generatedId = true)
     private int id;
 
     @DatabaseField(columnName = FIELD_movieNAME)
     private String movieName;
+
+    @DatabaseField(columnName = FIELD_OCENA)
+    private String ocena;
 
     public Filmovi() {
 

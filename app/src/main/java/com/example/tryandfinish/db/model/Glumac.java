@@ -5,13 +5,14 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import java.io.Serializable;
+
 @DatabaseTable(tableName = Glumac.TABLE_GLUMAC)
 public class Glumac {
 
     public static final String TABLE_GLUMAC = "actors";
     public static final String FIELD_ID = "id";
     public static final String FIELD_ACTOR_NAME = "name";
-    public static final String FIELD_ACTOR_LASTNAME = "lastName";
     public static final String FIELD_ACTOR_OPIS = "description";
     public static final String FIELD_ACTOR_IMAGE = "image";
   //  public static final String FIELD_LIST_OF_MOVIES = "listMovies";
@@ -21,9 +22,6 @@ public class Glumac {
 
     @DatabaseField(columnName = FIELD_ACTOR_NAME)
     private String name;
-
-    @DatabaseField(columnName = FIELD_ACTOR_LASTNAME)
-    private String lastName;
 
     @DatabaseField(columnName = FIELD_ACTOR_OPIS)
     private String description;
@@ -38,9 +36,8 @@ public class Glumac {
         // prazan konstr za ormLite
     }
 
-    public Glumac(String name, String lastName, String description, String image) {
+    public Glumac(String name, String description, String image) {
         this.name = name;
-        this.lastName = lastName;
         this.description = description;
         this.image = image;
     }
@@ -59,14 +56,6 @@ public class Glumac {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
     }
 
     public String getOpis() {

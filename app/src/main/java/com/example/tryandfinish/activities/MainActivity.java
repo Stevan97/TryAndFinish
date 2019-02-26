@@ -1,10 +1,16 @@
 package com.example.tryandfinish.activities;
 
+import android.Manifest;
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -34,6 +40,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_PICTURE = 1;
+    private static final int MY_PERMISSIONS_REQUEST_READ_MEDIA = 1;
 
     private int position;
     private String imagePath;
@@ -54,9 +61,24 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
 
+        activityStart();
+
+        checkPermission();
+
 
 
     }
+
+    private void checkPermission() {
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_MEDIA);
+        } else {
+
+        }
+    }
+
 
     private void reset() {
         imagePath = "";
@@ -66,8 +88,25 @@ public class MainActivity extends AppCompatActivity {
     private void selectPicture() {
         Intent intent = new Intent();
         intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
+        intent.setAction(Intent.ACTION_PICK);
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), SELECT_PICTURE);
+    }
+
+    public String getImagePath(Uri uri){
+        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+        cursor.moveToFirst();
+        String document_id = cursor.getString(0);
+        document_id = document_id.substring(document_id.lastIndexOf(":")+1);
+        cursor.close();
+
+        cursor = getContentResolver().query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor.moveToFirst();
+        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+        cursor.close();
+
+        return path;
     }
 
     @Override
@@ -79,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
                     if (selectedImageUri != null) {
-                        imagePath = selectedImageUri.toString();
+                        imagePath = getImagePath(selectedImageUri);
                         Toast.makeText(MainActivity.this, selectedImageUri.getPath(), Toast.LENGTH_LONG).show();
                     }
                     if (preview != null) {
@@ -102,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         if (listView != null) {
             ArrayAdapter<Glumac> glumacAdapter = (ArrayAdapter<Glumac>) listView.getAdapter();
 
-            if (glumacAdapter != null ) {
+            if (glumacAdapter != null) {
                 try {
                     glumacAdapter.clear();
                     List<Glumac> listaGlumca = getDatabaseHelper().getmGlumacDao().queryForAll();
@@ -131,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         final EditText editName = (EditText) dialog.findViewById(R.id.actor_name);
-        final EditText editLastName = (EditText) dialog.findViewById(R.id.actor_lastName);
         final EditText editDescription = (EditText) dialog.findViewById(R.id.actor_description);
         Button confirm = (Button) dialog.findViewById(R.id.actor_button_ok);
         confirm.setOnClickListener(new View.OnClickListener() {
@@ -139,9 +177,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 try {
                     String name = editName.getText().toString();
-                    String lastName = editLastName.getText().toString();
                     String opis = editDescription.getText().toString();
-                 //   ForeignCollection<Filmovi> listFilmovi = (ForeignCollection<Filmovi>) getDatabaseHelper().getmFilmoviDao().queryForId(position);
+                    //   ForeignCollection<Filmovi> listFilmovi = (ForeignCollection<Filmovi>) getDatabaseHelper().getmFilmoviDao().queryForId(position);
 
                     if (preview == null || imagePath == null) {
                         Toast.makeText(MainActivity.this, "MUST NOT BE EMPTY", Toast.LENGTH_LONG).show();
@@ -150,7 +187,6 @@ public class MainActivity extends AppCompatActivity {
 
                     Glumac glumac = new Glumac();
                     glumac.setName(name);
-                    glumac.setLastName(lastName);
                     glumac.setOpis(opis);
                     glumac.setImage(imagePath);
 
@@ -165,6 +201,14 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
+            }
+        });
+
+        Button cancel = (Button) dialog.findViewById(R.id.actor_button_cancel);
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
             }
         });
 
@@ -190,26 +234,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ListView za MainActivity (pocetni ekran)
-    private void activityStart() throws SQLException {
+    private void activityStart() {
+
+        try {
+            List<Glumac> listaGlumaca = null;
+            listaGlumaca = getDatabaseHelper().getmGlumacDao().queryForAll();
+            ArrayAdapter<Glumac> adapterGlumac = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaGlumaca);
+            final ListView listViewGlumci = (ListView) findViewById(R.id.list_view_glumci);
+            listViewGlumci.setAdapter(adapterGlumac);
+            listViewGlumci.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Glumac g = (Glumac) listViewGlumci.getItemAtPosition(position);
+
+                    Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                    intent.putExtra("Glumac", g.getId());
+                    startActivity(intent);
+
+                }
+
+            });
 
 
-        List<Glumac> listaGlumaca = getDatabaseHelper().getmGlumacDao().queryForAll();
-        ArrayAdapter<Glumac> adapterGlumac = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listaGlumaca);
-        final ListView listViewGlumci = (ListView) findViewById(R.id.list_view_glumci);
-        listViewGlumci.setAdapter(adapterGlumac);
-        listViewGlumci.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                listViewGlumci.getItemAtPosition(position);
-
-            }
-        });
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 
     public DatabaseHelper getDatabaseHelper() {
         if (databaseHelper == null) {
-            OpenHelperManager.getHelper(this, DatabaseHelper.class);
+            databaseHelper = OpenHelperManager.getHelper(this, DatabaseHelper.class);
         }
         return databaseHelper;
     }
